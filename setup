@@ -12,9 +12,4 @@ fi
 
 fullpath=$(dirname $(realpath $0))
 
-ln -s $fullpath/.env $1/.env
-ln -s $fullpath/.env.sample $1/.env.sample
-ln -s $fullpath/.ruby-version $1/.ruby-version
-ln -s $fullpath/Gemfile $1/Gemfile
-ln -s $fullpath/Gemfile.lock $1/Gemfile.lock
 ln -s $fullpath/bin $1

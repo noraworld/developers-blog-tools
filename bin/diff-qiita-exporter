@@ -9,7 +9,7 @@ require 'json'
 require 'optparse'
 require 'pry'
 
-Dotenv.load
+Dotenv.load("#{File.readlink("#{Dir.pwd}/bin")}/../.env")
 
 def diff_by_item_dir(item_dir)
   raise 'Qiita item file not found' unless File.exists?("#{item_dir}/info.json") && File.exists?("#{item_dir}/README.md")
