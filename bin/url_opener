@@ -5,6 +5,7 @@ require 'dotenv'
 require 'launchy'
 require 'optparse'
 require 'pry'
+require 'readline'
 
 Dotenv.load("#{File.readlink("#{Dir.pwd}/bin")}/../.env")
 
@@ -73,7 +74,7 @@ class UrlOpener
     arguments = opts.parse(ARGV)
 
     validate_options(options)
-    validate_arguments(arguments)
+    arguments = validate_arguments(arguments)
 
     [options, arguments]
   end
@@ -85,8 +86,15 @@ class UrlOpener
   end
 
   def validate_arguments(arguments)
-    raise 'Arguments empty! Specify article files' if arguments.empty?
+    if arguments.empty?
+      puts "No arguments given. Type or paste article files with an array\n\n"
+      input = Readline.readline
+      arguments = input.scan(%r{articles/.*\.md})
+    end
+
     arguments.all? { |arg| raise "#{arg} is not found" unless File.exists?(arg) }
+
+    arguments
   end
 end
 
