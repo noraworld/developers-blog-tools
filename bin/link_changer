@@ -1,0 +1,151 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Change your developers blog articles’ links in all or specified articles
+# https://qiita.com/noraworld/items/55c0cb1eb52cf8dccc12 -> https://ja.developers.noraworld.blog/bluetoothctl-commands
+
+require 'diffy'
+require 'dotenv'
+require 'optparse'
+require 'pry'
+require 'readline'
+
+Dotenv.load("#{File.readlink("#{Dir.pwd}/bin")}/../.env")
+
+class LinkChanger
+  attr_accessor :options, :arguments
+
+  def initialize
+    @options, @arguments = parse_options
+    raise 'Working directory is not clean!' if git_dirty?
+    confirm_before_execution unless @options[:dry_run]
+  end
+
+  def change
+    if @arguments.empty?
+      Dir.glob("#{ENV['INCLUDED_DIR']}/**").each do |article_path|
+        convert_url_in_markdown(article_path)
+      end
+    elsif arguments.all? { |arg| arg.include?(ENV['INCLUDED_DIR']) && arg.include?('.md') }
+      arguments.each do |article_path|
+        convert_url_in_markdown(article_path)
+      end
+    else
+      raise 'Arguments invalid'
+    end
+  end
+
+  private
+
+  def convert_url_in_markdown(article_path)
+    raise "#{File.basename(article_path)} not found in #{File.dirname(article_path)}" unless File.exists?(article_path)
+
+    before_url = normalize_before_url(@options[:before_url])
+    after_url  = normalize_after_url(@options[:after_url])
+
+    # https://rdera.hatenadiary.org/entry/20110311/1299807083
+    File.open(article_path, 'r+') do |file|
+      file.flock(File::LOCK_EX)
+      content = file.read
+      converted_content = content.gsub(%r{(http://|https://)?#{before_url}/([0-9a-zA-Z|\-]*)}) { "#{after_url}/#{convert_article_path($2)}" }
+
+      if @options[:dry_run]
+        Diffy::Diff.default_format = :color
+        puts Diffy::Diff.new(content, converted_content, context: options[:context])
+      else
+        file.rewind
+        file.puts converted_content
+        file.truncate(file.tell)
+      end
+    end
+  end
+
+  # "55c0cb1eb52cf8dccc12"  -> "bluetoothctl-commands"
+  # "bluetoothctl-commands" -> "bluetoothctl-commands"
+  def convert_article_path(path)
+    File.open(ENV['MAPPING_FILEPATH']).each_line do |line|
+      github_filename, qiita_item_id = line.split(',').map { |p| p.gsub(/[\s\r\n]/, '').gsub(%r{^articles/}, '').gsub(/.md$/, '') }
+
+      if path == github_filename
+        return qiita_item_id
+      elsif path == qiita_item_id
+        return github_filename
+      end
+    end
+
+    nil
+  end
+
+  # "https://qiita.com/noraworld/items" -> "qiita.com/noraworld/items"
+  # "zenn.dev/noraworld/articles/"      -> "zenn.dev/noraworld/articles"
+  def normalize_before_url(url)
+    url.gsub(%r{\A(http://|https://)?}, '').delete_suffix('/')
+  end
+
+  # "qiita.com/noraworld/items"            -> "https://qiita.com/noraworld/items"
+  # "https://zenn.dev/noraworld/articles/" -> "https://zenn.dev/noraworld/articles"
+  def normalize_after_url(url)
+    normalized = url
+
+    unless url.match(%r{\A(http://|https://)})
+      puts 'WARNING: URL schema ("http://" or "https://") is missing in after URL. Add "https://" automatically.'
+      normalized = "https://#{url}"
+    end
+
+    normalized.delete_suffix('/')
+  end
+
+  def confirm_before_execution
+    puts 'This command rewrites existing articles.'
+    print 'Are you sure you want to rewrite? [yes/no]: '
+    intention = Readline.readline
+
+    unless intention.downcase == 'yes'
+      puts 'Canceled'
+      exit
+    end
+  end
+
+  def git_dirty?
+    !`git status --short`.empty?
+  end
+
+  def parse_options
+    parser = OptionParser.new
+
+    options = {
+      after_url:  nil,
+      before_url: nil,
+      context:    3,
+      dry_run:    false
+    }
+
+    parser.on('-a', '--after VALUE', String, 'Specify URL after convertion', 'e.g. https://zenn.dev/noraworld/articles') do |option|
+      options[:after_url] = option
+    end
+
+    parser.on('-b', '--before VALUE', String, 'Specify URL before convertion', 'e.g. https://qiita.com/noraworld/items') do |option|
+      options[:before_url] = option
+    end
+
+    parser.on('-c', '--context VALUE', Integer, 'Specify the number of lines of context around changes', 'Default is 3', 'Only affected when dry run') do |option|
+      options[:context] = option
+    end
+
+    parser.on('-d', '--dry-run', '--diff', 'Only show diff between current files and changed files') do |_|
+      options[:dry_run] = true
+    end
+
+    arguments = parser.parse(ARGV)
+
+    validate_options(options)
+    [options, arguments]
+  end
+
+  def validate_options(options)
+    raise '--after is missing'  unless options[:after_url]
+    raise '--before is missing' unless options[:before_url]
+  end
+end
+
+LinkChanger.new.change
