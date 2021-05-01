@@ -1,0 +1,93 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'dotenv'
+require 'launchy'
+require 'optparse'
+require 'pry'
+
+Dotenv.load("#{File.readlink("#{Dir.pwd}/bin")}/../.env")
+
+ACCEPTED_PATHTYPE = %w[
+  github_filename
+  qiita_item_id
+].freeze
+
+PRE_REGISTERED_ARTICLE_BASEURL = {
+  blog:  'https://ja.developers.noraworld.blog',
+  qiita: 'https://qiita.com/noraworld/items',
+  zenn:  'https://zenn.dev/noraworld/articles'
+}.freeze
+
+class UrlOpener
+  attr_accessor :options, :arguments
+
+  def initialize
+    @options, @arguments = parse_options
+  end
+
+  def open
+    @arguments.each do |file|
+      article_baseurl = if PRE_REGISTERED_ARTICLE_BASEURL.keys.include?(@options[:site].to_sym)
+                          PRE_REGISTERED_ARTICLE_BASEURL[@options[:site].to_sym]
+                        else
+                          @options[:site]
+                        end
+
+      article_url = "#{article_baseurl}/#{convert_article_path(file)}"
+      Launchy.open(article_url)
+    end
+  end
+
+  private
+
+  def convert_article_path(path)
+    converted_path_map = {}
+
+    File.open(ENV['MAPPING_FILEPATH']).each_line do |line|
+      converted_path_map[:github_filename], converted_path_map[:qiita_item_id] =
+        line.split(',').map { |p| p.gsub(/[\s\r\n]/, '') }
+
+      return converted_path_map[@options[:path].to_sym] if converted_path_map.values.include?(path)
+    end
+
+    raise "#{path} did not match!"
+  end
+
+  def parse_options
+    opts = OptionParser.new
+
+    options = {
+      path: nil,
+      site: nil
+    }
+
+    opts.on('-p', '--path VALUE', String, 'Specify path type, github_filename or qiita_item_id') do |option|
+      options[:path] = option
+    end
+
+    opts.on('-s', '--site VALUE', String, 'Specify which website do you want to open in') do |option|
+      options[:site] = option
+    end
+
+    arguments = opts.parse(ARGV)
+
+    validate_options(options)
+    validate_arguments(arguments)
+
+    [options, arguments]
+  end
+
+  def validate_options(options)
+    raise '--path is missing' unless options[:path]
+    raise '--path is invalid' unless ACCEPTED_PATHTYPE.include?(options[:path])
+    raise '--site is missing' unless options[:site]
+  end
+
+  def validate_arguments(arguments)
+    raise 'Arguments empty! Specify article files' if arguments.empty?
+    arguments.all? { |arg| raise "#{arg} is not found" unless File.exists?(arg) }
+  end
+end
+
+UrlOpener.new.open
