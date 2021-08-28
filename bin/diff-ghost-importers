@@ -3,9 +3,11 @@
 
 require 'diffy'
 require 'optparse'
+require 'pry'
 
 class DiffGhostImporters
   PARTITION_LENGTH = 80
+  MAX_SLUG_LENGTH  = 50
 
   def initialize
     @options, @arguments = parse_options
@@ -15,12 +17,12 @@ class DiffGhostImporters
   def diff
     Dir.glob("#{@arguments.first}/**").each do |filepath1|
       File.basename(filepath1).gsub(/^\d{4}-\d{2}-\d{2}-/, '').then do |slug|
-        filepath2 = Dir.glob("#{@arguments.last}/*-#{slug}").first
+        filepath2 = Dir.glob("#{@arguments.last}/*#{slug}").first
 
         if filepath2.nil?
           message = 'Corresponding file not found'
 
-          if @option[:strict]
+          if @options[:strict]
             raise message
           else
             puts "WARN: #{message}"
@@ -51,6 +53,9 @@ class DiffGhostImporters
   end
 
   def partition(slug)
+    # omit if slug is too long
+    slug = "#{slug[0..(MAX_SLUG_LENGTH - 1)]}..." if slug.length > MAX_SLUG_LENGTH
+
     begin_partition = '=' * ((PARTITION_LENGTH - slug.length) / 2 - 1) + " #{slug} " + '=' * ((PARTITION_LENGTH - slug.length) / 2 - 1)
     begin_partition = "=#{begin_partition}" if begin_partition.length < PARTITION_LENGTH
     end_partition   = '=' * PARTITION_LENGTH + "\n\n\n"
