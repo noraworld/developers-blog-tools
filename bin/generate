@@ -1,0 +1,99 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'erb'
+require 'optparse'
+require 'pry'
+
+class Blog
+  def initialize
+    @options, @arguments = parse_options
+    validate!
+  end
+
+  def generate
+    File.open(filepath, mode = 'w') do |f|
+      f.write(yaml_header)
+    end
+  rescue
+    File.delete(filepath)
+    raise
+  end
+
+  private
+
+  def yaml_header
+    header = <<~'HEADER'
+      ---
+      layout: post
+      title: "<%= @options[:title] %>"
+      image: "<%= @options[:image] %>"
+      date: "<%= time %>"
+      tags:
+      <%- @options[:tags]&.each do |tag| -%>
+      - <%= tag %>
+      <%- end -%>
+      ---
+    HEADER
+
+    ERB.new(header, nil, '-').result(binding)
+  end
+
+  def filepath
+    "#{@arguments.first}/#{filename}"
+  end
+
+  def filename
+    "#{date}-#{@options[:slug]}.md"
+  end
+
+  def date
+    Time.now.strftime('%Y-%m-%d')
+  end
+
+  def time
+    Time.now.strftime('%Y-%m-%d %H:%M:%S')
+  end
+
+  def parse_options
+    op = OptionParser.new
+
+    options = {
+      slug: nil,
+      title: nil,
+      image: nil,
+      tags: nil
+    }
+
+    op.on('-s', '--slug VALUE', String, 'Specify a slug, which is used for a filename and a post URL') do |option|
+      options[:slug] = option
+    end
+
+    op.on('-t', '--title VALUE', String, 'Specify a title') do |option|
+      options[:title] = option
+    end
+
+    op.on('-i', '--image VALUE', String, 'Specify a image, which can be used as a thumbnail') do |option|
+      options[:image] = option
+    end
+
+    op.on('--tags VALUE', Array, 'Specify tags, which is comma separated for multiple values') do |option|
+      options[:tags] = option
+    end
+
+    arguments = op.parse(ARGV)
+
+    [options, arguments]
+  end
+
+  def validate!
+    raise 'No arguments given'         if     @arguments.empty?
+    raise 'Too many arguments'         unless @arguments.count == 1
+    raise 'No such directory'          unless Dir.exists?(@arguments.first)
+    raise '--slug missing'             if     @options[:slug].nil?
+    raise "#{filepath} already exists" if     File.exists?(filepath)
+  end
+end
+
+blog = Blog.new
+blog.generate
