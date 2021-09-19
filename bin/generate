@@ -87,11 +87,11 @@ class Blog
   end
 
   def validate!
-    raise 'No arguments given'         if     @arguments.empty?
-    raise 'Too many arguments'         unless @arguments.count == 1
-    raise 'No such directory'          unless Dir.exists?(@arguments.first)
-    raise '--slug missing'             if     @options[:slug].nil?
-    raise "#{filepath} already exists" if     File.exists?(filepath)
+    raise 'No arguments given. Specify the target directory' if     @arguments.empty?
+    raise 'Too many arguments'                               unless @arguments.count == 1
+    raise 'No such directory'                                unless Dir.exists?(@arguments.first)
+    raise '--slug missing'                                   if     @options[:slug].nil?
+    raise "#{filepath} already exists"                       if     File.exists?(filepath)
   end
 end
 
