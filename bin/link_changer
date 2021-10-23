@@ -1,9 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Change your developers blog articles’ links in all or specified articles
-# https://qiita.com/noraworld/items/55c0cb1eb52cf8dccc12 -> https://ja.developers.noraworld.blog/bluetoothctl-commands
-
 require 'color_echo'
 require 'diffy'
 require 'dotenv'
@@ -18,6 +15,8 @@ ACCEPTED_PATHTYPE = %w[
   qiita_item_id
 ].freeze
 
+# Change your developers blog articles’ links in all or specified articles
+# https://qiita.com/noraworld/items/55c0cb1eb52cf8dccc12 -> https://ja.developers.noraworld.blog/bluetoothctl-commands
 class LinkChanger
   attr_accessor :options, :arguments
 
@@ -65,7 +64,10 @@ class LinkChanger
         next if diff.to_s.chomp.empty?
 
         CE.once.ch :magenta
-        puts "#{'=' * ((79 - article_path.length) / 2 - 1)} #{article_path} #{'=' * ((79 - article_path.length).to_f / 2.0 - 1.0).ceil}"
+        puts "#{'=' * (((79 - article_path.length) / 2) - 1)} " \
+             "#{article_path} " \
+             "#{'=' * (((79 - article_path.length).to_f / 2.0) - 1.0).ceil}"
+
         puts diff
         CE.once.ch :magenta
         puts "#{'=' * 79}\n\n\n"
@@ -118,7 +120,7 @@ class LinkChanger
     print 'Are you sure you want to rewrite? [yes/no]: '
     intention = Readline.readline
 
-    unless intention.downcase == 'yes'
+    unless intention.downcase == 'yes' # rubocop:disable Style/GuardClause
       puts 'Canceled'
       exit
     end
@@ -132,13 +134,13 @@ class LinkChanger
     parser = OptionParser.new
 
     parser.banner =
-      <<~EOS
+      <<~USAGE
         Usage: #{File.basename(__FILE__)} [options]
                Convert links in your articles
                e.g. https://qiita.com/noraworld/items/55c0cb1eb52cf8dccc12 -> https://ja.developers.noraworld.blog/bluetoothctl-commands
                Supported path: qiita_item_id, github_filename
 
-      EOS
+      USAGE
 
     options = {
       after_url: nil,
