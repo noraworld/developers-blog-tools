@@ -79,7 +79,7 @@ def print_diff(github_side_content, qiita_side_content, article_path, item_id)
     return
   end
 
-  options, arguments = parse_options
+  options, _arguments = parse_options
   CE.once.ch :magenta
   puts "#{article_path} / #{qiita_item_url(item_id)}"
   Diffy::Diff.default_format = :color
