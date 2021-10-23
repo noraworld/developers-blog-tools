@@ -20,6 +20,7 @@ PRE_REGISTERED_ARTICLE_BASEURL = {
   zenn: 'https://zenn.dev/noraworld/articles'
 }.freeze
 
+# Open article URL in browser
 class UrlOpener
   attr_accessor :options, :arguments
 
