@@ -12,15 +12,15 @@ require 'pry'
 Dotenv.load("#{File.readlink("#{Dir.pwd}/bin")}/../.env")
 
 def diff_by_item_dir(item_dir)
-  raise 'Qiita item file not found' unless File.exists?("#{item_dir}/info.json") && File.exists?("#{item_dir}/README.md")
+  raise 'Qiita item file not found' unless File.exist?("#{item_dir}/info.json") && File.exist?("#{item_dir}/README.md")
 
   item_id = begin
-              # broken JSON detected!
-              # "tags":["Ruby"]}]}on"]}e","アプリ","テーマ","拡張機能"]
-              JSON.parse(File.open("#{item_dir}/info.json").read)['id']
-            rescue
-              File.open("#{item_dir}/info.json").read.match(%r{"id":"(.*?)"})[1]
-            end
+    # broken JSON detected!
+    # "tags":["Ruby"]}]}on"]}e","アプリ","テーマ","拡張機能"]
+    JSON.parse(File.open("#{item_dir}/info.json").read)['id']
+  rescue StandardError
+    File.open("#{item_dir}/info.json").read.match(/"id":"(.*?)"/)[1]
+  end
   qiita_side_content = File.open("#{item_dir}/README.md").read
 
   article_path = ''
@@ -36,30 +36,26 @@ def diff_by_item_dir(item_dir)
 end
 
 def diff_by_article_path(article_path)
-  raise 'GitHub article path not found' unless File.exists?(article_path)
+  raise 'GitHub article path not found' unless File.exist?(article_path)
 
   github_side_content = File.open(article_path).read
 
   item_id = ''
   File.open(ENV['MAPPING_FILEPATH']).each_line do |line|
-    if line.include?(article_path)
-      item_id = line.split(',').last.gsub(/[\s\r\n]/, '')
-    end
+    item_id = line.split(',').last.gsub(/[\s\r\n]/, '') if line.include?(article_path)
   end
 
   qiita_side_content = ''
   Dir.glob('items/**').each do |item_dir|
     item_id_from_info_json = begin
-                               # broken JSON detected!
-                               # "tags":["Ruby"]}]}on"]}e","アプリ","テーマ","拡張機能"]
-                               JSON.parse(File.open("#{item_dir}/info.json").read)['id']
-                             rescue
-                               File.open("#{item_dir}/info.json").read.match(%r{"id":"(.*?)"})[1]
-                             end
-
-    if item_id == item_id_from_info_json
-      qiita_side_content = File.open("#{item_dir}/README.md").read
+      # broken JSON detected!
+      # "tags":["Ruby"]}]}on"]}e","アプリ","テーマ","拡張機能"]
+      JSON.parse(File.open("#{item_dir}/info.json").read)['id']
+    rescue StandardError
+      File.open("#{item_dir}/info.json").read.match(/"id":"(.*?)"/)[1]
     end
+
+    qiita_side_content = File.open("#{item_dir}/README.md").read if item_id == item_id_from_info_json
   end
 
   print_diff(github_side_content, qiita_side_content, article_path, item_id)
@@ -102,8 +98,8 @@ end
 def main
   options, arguments = parse_options
 
-  if !Dir.exists?('items') || options[:renew]
-    if !Dir.exists?('items')
+  if !Dir.exist?('items') || options[:renew]
+    if !Dir.exist?('items')
       puts "INFO: \"items\" directory not found. Execute `npx qiita_export_all`.\n\n"
     elsif options[:renew]
       puts "INFO: Execute `npx qiita_export_all`.\n\n"
@@ -112,7 +108,7 @@ def main
     # exportation of QIITA_ACCESS_TOKEN is not necessary because load from .env automatically
     `npx qiita_export_all`
 
-    raise '"items" directory not found' unless Dir.exists?('items')
+    raise '"items" directory not found' unless Dir.exist?('items')
   end
 
   if arguments.empty?
@@ -140,11 +136,12 @@ def parse_options
     context: 3
   }
 
-  parser.on('-r', '--renew', 'Renew Qiita contents by qiita_export_all') do |option|
+  parser.on('-r', '--renew', 'Renew Qiita contents by qiita_export_all') do |_option|
     options[:renew] = true
   end
 
-  parser.on('-c', '--context VALUE', Integer, 'Specify the number of lines of context around changes', 'Default is 3') do |option|
+  parser.on('-c', '--context VALUE', Integer, 'Specify the number of lines of context around changes',
+            'Default is 3') do |option|
     options[:context] = option
   end
 

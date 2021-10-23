@@ -15,9 +15,9 @@ ACCEPTED_PATHTYPE = %w[
 ].freeze
 
 PRE_REGISTERED_ARTICLE_BASEURL = {
-  blog:  'https://ja.developers.noraworld.blog',
+  blog: 'https://ja.developers.noraworld.blog',
   qiita: 'https://qiita.com/noraworld/items',
-  zenn:  'https://zenn.dev/noraworld/articles'
+  zenn: 'https://zenn.dev/noraworld/articles'
 }.freeze
 
 class UrlOpener
@@ -92,7 +92,7 @@ class UrlOpener
       arguments = input.scan(%r{articles/.*\.md})
     end
 
-    arguments.all? { |arg| raise "#{arg} is not found" unless File.exists?(arg) }
+    arguments.all? { |arg| raise "#{arg} is not found" unless File.exist?(arg) }
 
     arguments
   end

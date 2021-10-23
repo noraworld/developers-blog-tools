@@ -24,6 +24,7 @@ class LinkChanger
   def initialize
     @options, @arguments = parse_options
     raise 'Working directory is not clean! Commit or stash changes' if git_dirty?
+
     confirm_before_execution unless @options[:dry_run]
   end
 
@@ -44,7 +45,7 @@ class LinkChanger
   private
 
   def convert_url_in_markdown(article_path)
-    raise "#{File.basename(article_path)} not found in #{File.dirname(article_path)}" unless File.exists?(article_path)
+    raise "#{File.basename(article_path)} not found in #{File.dirname(article_path)}" unless File.exist?(article_path)
 
     before_url = normalize_before_url(@options[:before_url])
     after_url  = normalize_after_url(@options[:after_url])
@@ -53,7 +54,9 @@ class LinkChanger
     File.open(article_path, 'r+') do |file|
       file.flock(File::LOCK_EX)
       content = file.read
-      converted_content = content.gsub(%r{(http://|https://)?#{before_url}/([0-9a-zA-Z|\-]*)}) { "#{after_url}/#{convert_article_path($2)}" }
+      converted_content = content.gsub(%r{(http://|https://)?#{before_url}/([0-9a-zA-Z|\-]*)}) do
+        "#{after_url}/#{convert_article_path(Regexp.last_match(2))}"
+      end
 
       if @options[:dry_run]
         Diffy::Diff.default_format = :color
@@ -62,7 +65,7 @@ class LinkChanger
         next if diff.to_s.chomp.empty?
 
         CE.once.ch :magenta
-        puts "#{'=' * ((79 - article_path.length) / 2 - 1)} #{article_path} #{'=' * (((79 - article_path.length).to_f / 2.0 - 1.0).ceil)}"
+        puts "#{'=' * ((79 - article_path.length) / 2 - 1)} #{article_path} #{'=' * ((79 - article_path.length).to_f / 2.0 - 1.0).ceil}"
         puts diff
         CE.once.ch :magenta
         puts "#{'=' * 79}\n\n\n"
@@ -138,23 +141,26 @@ class LinkChanger
       EOS
 
     options = {
-      after_url:  nil,
+      after_url: nil,
       before_url: nil,
-      context:    3,
-      dry_run:    false,
-      path:       nil,
-      strict:     false
+      context: 3,
+      dry_run: false,
+      path: nil,
+      strict: false
     }
 
-    parser.on('-a', '--after VALUE', String, 'Specify URL after convertion', 'e.g. https://zenn.dev/noraworld/articles') do |option|
+    parser.on('-a', '--after VALUE', String, 'Specify URL after convertion',
+              'e.g. https://zenn.dev/noraworld/articles') do |option|
       options[:after_url] = option
     end
 
-    parser.on('-b', '--before VALUE', String, 'Specify URL before convertion', 'e.g. https://qiita.com/noraworld/items') do |option|
+    parser.on('-b', '--before VALUE', String, 'Specify URL before convertion',
+              'e.g. https://qiita.com/noraworld/items') do |option|
       options[:before_url] = option
     end
 
-    parser.on('-c', '--context VALUE', Integer, 'Specify the number of lines of context around changes', 'Default is 3', 'Only affected when dry run') do |option|
+    parser.on('-c', '--context VALUE', Integer, 'Specify the number of lines of context around changes',
+              'Default is 3', 'Only affected when dry run') do |option|
       options[:context] = option
     end
 
@@ -166,7 +172,8 @@ class LinkChanger
       options[:path] = option
     end
 
-    parser.on('-s', '--strict', 'Throw an exception when a part of a path of your article URL did not match a mapping file') do |_|
+    parser.on('-s', '--strict',
+              'Throw an exception when a part of a path of your article URL did not match a mapping file') do |_|
       options[:strict] = true
     end
 

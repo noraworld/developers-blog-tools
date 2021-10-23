@@ -15,7 +15,7 @@ class Blog
     File.open(filepath, mode = 'w') do |f|
       f.write(yaml_header)
     end
-  rescue
+  rescue StandardError
     File.delete(filepath)
     raise
   end
@@ -37,7 +37,7 @@ class Blog
       ---
     HEADER
 
-    ERB.new(header, nil, '-').result(binding)
+    ERB.new(header, trim_mode: '-').result(binding)
   end
 
   def filepath
@@ -64,7 +64,7 @@ class Blog
       title: nil,
       image: nil,
       tags: nil,
-      published: "true"
+      published: 'true'
     }
 
     op.on('-s', '--slug VALUE', String, 'Specify a slug, which is used for a filename and a post URL') do |option|
@@ -83,7 +83,8 @@ class Blog
       options[:tags] = option
     end
 
-    op.on('-p', '--published VALUE', String, 'Specify whether an article will be public or not with true or false') do |option|
+    op.on('-p', '--published VALUE', String,
+          'Specify whether an article will be public or not with true or false') do |option|
       options[:published] = option
     end
 
@@ -95,9 +96,9 @@ class Blog
   def validate!
     raise 'No arguments given. Specify the target directory'  if     @arguments.empty?
     raise 'Too many arguments'                                unless @arguments.count == 1
-    raise 'No such directory'                                 unless Dir.exists?(@arguments.first)
+    raise 'No such directory'                                 unless Dir.exist?(@arguments.first)
     raise '--slug missing'                                    if     @options[:slug].nil?
-    raise "#{filepath} already exists"                        if     File.exists?(filepath)
+    raise "#{filepath} already exists"                        if     File.exist?(filepath)
     raise '--published is invalid. Specify "true" or "false"' unless valid_published?
   end
 
