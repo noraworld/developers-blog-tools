@@ -5,6 +5,7 @@ require 'erb'
 require 'optparse'
 require 'pry'
 
+# Generate new blog article YAML header
 class Blog
   def initialize
     @options, @arguments = parse_options
@@ -12,7 +13,7 @@ class Blog
   end
 
   def generate
-    File.open(filepath, mode = 'w') do |f|
+    File.open(filepath, 'w') do |f|
       f.write(yaml_header)
     end
   rescue StandardError
@@ -103,7 +104,6 @@ class Blog
   end
 
   def valid_published?
-    binding.pry
     return true if @options[:published].nil?
     return true if @options[:published] == 'true'
     return true if @options[:published] == 'false'
