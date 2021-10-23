@@ -33,6 +33,7 @@ class Blog
       <%- @options[:tags]&.each do |tag| -%>
       - <%= tag %>
       <%- end -%>
+      published: <%= @options[:published] %>
       ---
     HEADER
 
@@ -62,7 +63,8 @@ class Blog
       slug: nil,
       title: nil,
       image: nil,
-      tags: nil
+      tags: nil,
+      published: "true"
     }
 
     op.on('-s', '--slug VALUE', String, 'Specify a slug, which is used for a filename and a post URL') do |option|
@@ -81,17 +83,31 @@ class Blog
       options[:tags] = option
     end
 
+    op.on('-p', '--published VALUE', String, 'Specify whether an article will be public or not with true or false') do |option|
+      options[:published] = option
+    end
+
     arguments = op.parse(ARGV)
 
     [options, arguments]
   end
 
   def validate!
-    raise 'No arguments given. Specify the target directory' if     @arguments.empty?
-    raise 'Too many arguments'                               unless @arguments.count == 1
-    raise 'No such directory'                                unless Dir.exists?(@arguments.first)
-    raise '--slug missing'                                   if     @options[:slug].nil?
-    raise "#{filepath} already exists"                       if     File.exists?(filepath)
+    raise 'No arguments given. Specify the target directory'  if     @arguments.empty?
+    raise 'Too many arguments'                                unless @arguments.count == 1
+    raise 'No such directory'                                 unless Dir.exists?(@arguments.first)
+    raise '--slug missing'                                    if     @options[:slug].nil?
+    raise "#{filepath} already exists"                        if     File.exists?(filepath)
+    raise '--published is invalid. Specify "true" or "false"' unless valid_published?
+  end
+
+  def valid_published?
+    binding.pry
+    return true if @options[:published].nil?
+    return true if @options[:published] == 'true'
+    return true if @options[:published] == 'false'
+
+    false
   end
 end
 
