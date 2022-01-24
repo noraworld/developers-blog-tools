@@ -53,7 +53,7 @@ module Article
     return nil if offset.nil?
 
     sign = offset.positive? ? '+' : '-'
-    offset_with_padding = format("%02<number>d", number: offset.abs)
+    offset_with_padding = format('%02<number>d', number: offset.abs)
 
     "#{sign}#{offset_with_padding}00"
   end
@@ -83,6 +83,7 @@ module Article
   end
 end
 
+# blog template format
 class Blog
   include Article
 
@@ -149,6 +150,7 @@ class Blog
   end
 end
 
+# diary template format
 class Diary
   include Article
 
@@ -174,8 +176,8 @@ class Diary
     }
 
     op.on('-t', '--timezone VALUE', String,
-      'Specify your timezone, like "EST" (if you live in New York)',
-      'Mixing upper case and lower case letters is also acceptable (e.g. est, Est, EST)') do |option|
+          'Specify your timezone, like "EST" (if you live in New York)',
+          'Mixing upper case and lower case letters is also acceptable (e.g. est, Est, EST)') do |option|
       options[:timezone] = option
     end
 
