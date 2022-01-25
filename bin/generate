@@ -166,7 +166,6 @@ class Diary
       layout: post
       title: "<%= date %>"
       # date: "<%= time %><%- if @options[:timezone] -%> <%= zone_offset(@options[:timezone]) %><%- end -%>"
-      private: <%= @options[:private] %>
       ---
     HEADER
 
@@ -177,8 +176,7 @@ class Diary
     op = OptionParser.new
 
     options = {
-      timezone: nil,
-      private: 'false'
+      timezone: nil
     }
 
     op.on('-t', '--timezone VALUE', String,
@@ -187,20 +185,9 @@ class Diary
       options[:timezone] = option
     end
 
-    op.on('-p', '--private VALUE', String,
-          'Specify whether there is a private diary in that day with "true" or "false"') do |option|
-      options[:private] = option
-    end
-
     arguments = op.parse(ARGV)
 
     [options, arguments]
-  end
-
-  def validate!
-    super
-
-    raise '--private is invalid. Specify "true" or "false"' unless valid_boolean?(@options[:private])
   end
 end
 
