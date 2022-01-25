@@ -3,8 +3,14 @@
 
 require 'erb'
 require 'optparse'
-require 'pry'
 require 'time'
+
+begin
+  require 'pry'
+rescue LoadError
+  # puts e
+  # puts 'but don’t worry. this is not necessary for ordinary use'
+end
 
 # Generate a new article with a YAML header
 module Article
