@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+mapping = File.open('mapping.txt', 'r', &:read)
+
+Dir.glob('articles/*') do |file|
+  puts file unless mapping.include?(file)
+end
